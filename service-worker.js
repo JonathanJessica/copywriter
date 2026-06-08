@@ -1,14 +1,16 @@
-﻿// 文案生成器 Service Worker — Cache-first strategy
-const CACHE_NAME = 'copywriter-v1';
+﻿// Service Worker v2
+const CACHE_NAME = 'copywriter-v2';
 const ASSETS = [
   './',
   './index.html',
   './manifest.json',
+  './service-worker.js',
   './icon.svg',
-  './favicon.svg'
+  './favicon.svg',
+  './icon-192.png',
+  './icon-512.png'
 ];
 
-// Install: pre-cache all assets
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
@@ -17,7 +19,6 @@ self.addEventListener('install', event => {
   );
 });
 
-// Activate: clean up old caches
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys =>
@@ -28,14 +29,10 @@ self.addEventListener('activate', event => {
   );
 });
 
-// Fetch: cache-first, falling back to network
 self.addEventListener('fetch', event => {
-  // Only handle GET requests
   if (event.request.method !== 'GET') return;
 
-  // Skip cross-origin requests (e.g. Google Fonts)
   if (!event.request.url.startsWith(self.location.origin)) {
-    // For Google Fonts, try network first with cache fallback
     if (event.request.url.includes('fonts.googleapis.com') ||
         event.request.url.includes('fonts.gstatic.com')) {
       event.respondWith(
@@ -54,13 +51,23 @@ self.addEventListener('fetch', event => {
     return;
   }
 
+  // Network-first for manifest and service-worker to ensure updates
+  if (event.request.url.endsWith('manifest.json') || event.request.url.endsWith('service-worker.js')) {
+    event.respondWith(
+      fetch(event.request).then(response => {
+        const clone = response.clone();
+        caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+        return response;
+      }).catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request).then(cached => {
       if (cached) return cached;
       return fetch(event.request).then(response => {
-        if (!response || response.status !== 200 || response.type !== 'basic') {
-          return response;
-        }
+        if (!response || response.status !== 200 || response.type !== 'basic') return response;
         const clone = response.clone();
         caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
         return response;
