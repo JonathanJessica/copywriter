@@ -1,0 +1,789 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>文案生成器</title>
+  <meta name="description" content="一键生成微博、小红书、LinkedIn、微信、抖音多平台文案">
+  <meta name="theme-color" content="#6c63ff">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="文案生成">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="apple-touch-icon" href="icon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0a0b;--surface:#141416;--surface2:#1c1c20;--border:#2a2a30;
+  --text:#e8e8ed;--text2:#9a9aa8;--accent:#6c63ff;--accent-glow:rgba(108,99,255,.15);
+  --weibo:#e6162d;--xiaohongshu:#fe2c55;--linkedin:#0a66c2;
+  --wechat:#07c160;--radius:14px;--radius-sm:8px;
+}
+html{font-size:16px}
+body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.6;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;z-index:-1;background:radial-gradient(ellipse 600px 400px at 20% 20%,rgba(108,99,255,.06),transparent),radial-gradient(ellipse 500px 500px at 80% 80%,rgba(254,44,85,.04),transparent)}
+.container{max-width:820px;margin:0 auto;padding:2rem 1.5rem 4rem}
+.topbar{display:flex;justify-content:flex-end;margin-bottom:1.25rem}
+.settings-trigger{display:flex;align-items:center;gap:.4rem;padding:.45rem .9rem;border-radius:var(--radius-sm);border:1.5px solid var(--border);background:transparent;color:var(--text2);font-family:inherit;font-size:.85rem;font-weight:500;cursor:pointer;transition:all .2s}
+.settings-trigger:hover{border-color:var(--accent);color:var(--text)}
+.settings-trigger svg{flex-shrink:0}
+header{text-align:center;margin-bottom:3rem}
+header h1{font-size:clamp(1.8rem,5vw,2.6rem);font-weight:700;letter-spacing:-.03em;background:linear-gradient(135deg,#fff 0%,#a8a0ff 50%,#ff8fab 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:.5rem}
+header p{color:var(--text2);font-size:.95rem;max-width:420px;margin:0 auto}
+.brand-badge{display:none;align-items:center;gap:.4rem;margin:0 auto .5rem;max-width:420px;padding:.35rem .85rem;border-radius:999px;background:var(--accent-glow);border:1px solid rgba(108,99,255,.25);font-size:.78rem;color:var(--accent);text-align:center}
+.brand-badge.visible{display:inline-flex}
+.brand-badge svg{flex-shrink:0}
+.input-section{margin-bottom:2rem}
+textarea{width:100%;min-height:160px;padding:1.25rem;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:inherit;font-size:1rem;resize:vertical;transition:border-color .2s,box-shadow .2s;outline:none}
+textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow)}
+textarea::placeholder{color:var(--text2)}
+.char-count{text-align:right;margin-top:.5rem;font-size:.8rem;color:var(--text2)}
+.tone-section{display:flex;gap:.6rem;flex-wrap:wrap;margin-bottom:1.5rem}
+.tone-btn{padding:.5rem 1.1rem;border-radius:999px;border:1.5px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;font-family:inherit;font-size:.85rem;font-weight:500;transition:all .2s}
+.tone-btn:hover{border-color:var(--accent);color:var(--text)}.tone-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.generate-btn{display:flex;align-items:center;justify-content:center;gap:.5rem;width:100%;padding:1rem;border:none;border-radius:var(--radius);background:linear-gradient(135deg,#6c63ff,#a78bfa);color:#fff;font-family:inherit;font-size:1.05rem;font-weight:600;cursor:pointer;position:relative;overflow:hidden;transition:transform .15s,box-shadow .2s}
+.generate-btn:hover{transform:translateY(-1px);box-shadow:0 8px 30px rgba(108,99,255,.3)}.generate-btn:active{transform:translateY(0)}
+.generate-btn:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none}
+.generate-btn .spinner{display:none;width:18px;height:18px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite}
+.generate-btn.loading .spinner{display:block}.generate-btn.loading .btn-text{display:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+.results{margin-top:2.5rem;display:flex;flex-direction:column;gap:1.5rem}
+.result-card{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);overflow:hidden;animation:fadeUp .4s ease both}
+.result-card:nth-child(2){animation-delay:.06s}.result-card:nth-child(3){animation-delay:.12s}.result-card:nth-child(4){animation-delay:.18s}.result-card:nth-child(5){animation-delay:.24s}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.result-header{display:flex;align-items:center;justify-content:space-between;padding:1rem 1.25rem;border-bottom:1px solid var(--border)}
+.platform-info{display:flex;align-items:center;gap:.65rem}
+.platform-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.platform-dot.weibo{background:var(--weibo)}.platform-dot.xiaohongshu{background:var(--xiaohongshu)}.platform-dot.linkedin{background:var(--linkedin)}.platform-dot.wechat{background:var(--wechat)}.platform-dot.douyin{background:linear-gradient(135deg,#25f4ee,#fe2c55);width:14px;height:14px}
+.platform-name{font-weight:600;font-size:.95rem}.platform-meta{font-size:.78rem;color:var(--text2)}
+.copy-btn{display:flex;align-items:center;gap:.35rem;padding:.4rem .9rem;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text2);font-family:inherit;font-size:.8rem;cursor:pointer;transition:all .2s}
+.copy-btn:hover{border-color:var(--accent);color:var(--text)}.copy-btn.copied{border-color:#22c55e;color:#22c55e}
+.result-body{padding:1.25rem;line-height:1.75;font-size:.95rem;white-space:pre-wrap}
+.result-body .hashtag{color:var(--accent);font-weight:500}
+.result-footer{padding:.75rem 1.25rem;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.word-count{font-size:.78rem;color:var(--text2)}.word-count.over{color:var(--weibo)}
+.hidden{display:none!important}
+.history-section{margin-top:3rem}
+.history-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem}
+.history-header h2{font-size:1.15rem;font-weight:600;display:flex;align-items:center;gap:.5rem}
+.history-header h2::before{content:'';width:3px;height:18px;border-radius:2px;background:var(--accent)}
+.history-toggle,.history-clear{background:transparent;border-radius:var(--radius-sm);padding:.35rem .8rem;font-family:inherit;font-size:.8rem;cursor:pointer;transition:all .2s}
+.history-toggle{border:1px solid var(--border);color:var(--text2)}.history-toggle:hover{border-color:var(--accent);color:var(--text)}
+.history-clear{border:1px solid rgba(239,68,68,.3);color:rgba(239,68,68,.7)}.history-clear:hover{border-color:rgb(239,68,68);color:rgb(239,68,68)}
+.history-actions{display:flex;gap:.5rem}
+.history-list{display:flex;flex-direction:column;gap:.75rem}
+.history-item{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);overflow:hidden;transition:border-color .2s}
+.history-item:hover{border-color:var(--accent)}
+.history-item-header{display:flex;align-items:center;justify-content:space-between;padding:.85rem 1.15rem;cursor:pointer;gap:.75rem}
+.history-item-meta{display:flex;flex-direction:column;flex:1;min-width:0}
+.history-item-time{font-size:.75rem;color:var(--text2);margin-bottom:.15rem}
+.history-item-preview{font-size:.88rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.history-item-tone{font-size:.72rem;color:var(--accent);background:var(--accent-glow);padding:.15rem .5rem;border-radius:999px;flex-shrink:0}
+.history-item-chevron{color:var(--text2);transition:transform .2s;flex-shrink:0}
+.history-item.open .history-item-chevron{transform:rotate(180deg)}
+.history-item-body{display:none;padding:0 1.15rem 1rem}
+.history-item.open .history-item-body{display:block}
+.history-item-results{display:flex;flex-direction:column;gap:1rem;margin-top:.5rem}
+.history-mini-card{background:var(--surface2);border-radius:var(--radius-sm);padding:.85rem 1rem}
+.history-mini-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:.4rem}
+.history-mini-name{display:flex;align-items:center;gap:.4rem;font-size:.82rem;font-weight:600}
+.history-mini-name .platform-dot{width:8px;height:8px}
+.history-mini-body{font-size:.85rem;line-height:1.6;white-space:pre-wrap;color:var(--text)}
+.history-restored{display:flex;align-items:center;justify-content:center;gap:.35rem;padding:.45rem .9rem;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text2);font-family:inherit;font-size:.78rem;cursor:pointer;transition:all .2s}
+.history-restored:hover{border-color:var(--accent);color:var(--text)}
+.modal-overlay{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:1.5rem;opacity:0;pointer-events:none;transition:opacity .25s}
+.modal-overlay.open{opacity:1;pointer-events:auto}
+.modal{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);width:100%;max-width:560px;max-height:85vh;overflow-y:auto;transform:translateY(16px);transition:transform .25s}
+.modal-overlay.open .modal{transform:none}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:1.25rem 1.5rem;border-bottom:1px solid var(--border)}
+.modal-header h2{font-size:1.15rem;font-weight:600}
+.modal-close{display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;border:none;background:transparent;color:var(--text2);cursor:pointer;transition:all .15s}
+.modal-close:hover{background:var(--surface2);color:var(--text)}
+.modal-body{padding:1.5rem;display:flex;flex-direction:column;gap:1.5rem}
+.field{display:flex;flex-direction:column;gap:.45rem}
+.field label{font-size:.85rem;font-weight:500;color:var(--text)}
+.field .hint{font-size:.75rem;color:var(--text2);margin-top:-.15rem}
+.field input,.field textarea{padding:.7rem 1rem;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:inherit;font-size:.9rem;outline:none;transition:border-color .2s,box-shadow .2s}
+.field input:focus,.field textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow)}
+.field input::placeholder,.field textarea::placeholder{color:var(--text2)}
+.field textarea{min-height:100px;resize:vertical;line-height:1.6}
+.preset-section{display:flex;flex-direction:column;gap:.6rem}
+.preset-label{font-size:.85rem;font-weight:500;color:var(--text)}
+.preset-chips{display:flex;flex-wrap:wrap;gap:.4rem}
+.preset-chip{padding:.35rem .75rem;border-radius:999px;border:1px solid var(--border);background:transparent;color:var(--text2);font-family:inherit;font-size:.78rem;cursor:pointer;transition:all .15s}
+.preset-chip:hover{border-color:var(--accent);color:var(--text)}
+.preset-chip.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.modal-footer{padding:1rem 1.5rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:.6rem}
+.btn-ghost{padding:.55rem 1.1rem;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text2);font-family:inherit;font-size:.85rem;font-weight:500;cursor:pointer;transition:all .2s}
+.btn-ghost:hover{border-color:var(--accent);color:var(--text)}
+.btn-primary{padding:.55rem 1.4rem;border-radius:var(--radius-sm);border:none;background:var(--accent);color:#fff;font-family:inherit;font-size:.85rem;font-weight:600;cursor:pointer;transition:all .2s}
+.btn-primary:hover{box-shadow:0 4px 16px rgba(108,99,255,.35)}
+.toast{position:fixed;bottom:2rem;left:50%;transform:translateX(-50%) translateY(20px);padding:.65rem 1.2rem;border-radius:var(--radius-sm);background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:.85rem;opacity:0;transition:all .3s;pointer-events:none;z-index:100}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+@media(max-width:600px){.container{padding:1.25rem 1rem 3rem}.tone-section{gap:.4rem}.tone-btn{padding:.4rem .8rem;font-size:.8rem}.modal{max-height:92vh}.modal-body{padding:1.25rem}}
+
+/* ── Install Banner ── */
+.install-banner{
+  position:fixed;top:0;left:0;right:0;z-index:300;
+  display:none;align-items:center;justify-content:center;gap:.75rem;
+  padding:.75rem 1.25rem;
+  background:linear-gradient(135deg,#1c1c20,#252530);
+  border-bottom:1px solid var(--border);
+  font-size:.88rem;color:var(--text);
+  animation:slideDown .3s ease;
+}
+.install-banner.show{display:flex}
+@keyframes slideDown{from{opacity:0;transform:translateY(-100%)}to{opacity:1;transform:none}}
+.install-banner .install-text{flex:1}
+.install-banner .install-text strong{color:var(--accent)}
+.install-accept{
+  padding:.4rem 1rem;border-radius:var(--radius-sm);border:none;
+  background:var(--accent);color:#fff;font-family:inherit;font-size:.82rem;font-weight:600;
+  cursor:pointer;white-space:nowrap;transition:all .15s;
+}
+.install-accept:hover{box-shadow:0 4px 12px rgba(108,99,255,.3)}
+.install-dismiss{
+  padding:.4rem .7rem;border-radius:var(--radius-sm);border:1px solid var(--border);
+  background:transparent;color:var(--text2);font-family:inherit;font-size:.82rem;
+  cursor:pointer;white-space:nowrap;
+}
+.install-dismiss:hover{border-color:var(--accent);color:var(--text)}
+
+/* Platform Selector */
+.platform-select{margin-bottom:1.5rem}
+.platform-select-title{font-size:.9rem;font-weight:600;margin-bottom:.75rem;color:var(--text)}
+.platform-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:.5rem}
+.platform-check{display:flex;align-items:center;gap:.5rem;padding:.6rem .85rem;border-radius:var(--radius-sm);border:1.5px solid var(--border);background:var(--surface);cursor:pointer;transition:all .2s;user-select:none}
+.platform-check:hover{border-color:var(--accent)}
+.platform-check.active{border-color:var(--accent);background:var(--accent-glow)}
+.platform-check input{display:none}
+.platform-check .p-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.platform-check .p-name{font-size:.82rem;font-weight:500;color:var(--text)}
+.mode-toggle{display:flex;align-items:center;gap:.5rem;margin-bottom:1rem}
+.mode-label{font-size:.82rem;color:var(--text2)}
+.ai-badge{display:inline-flex;align-items:center;gap:.3rem;padding:.2rem .55rem;border-radius:999px;background:linear-gradient(135deg,rgba(108,99,255,.2),rgba(167,139,250,.2));border:1px solid rgba(108,99,255,.3);font-size:.72rem;color:var(--accent)}
+.api-status{display:flex;align-items:center;gap:.35rem;font-size:.78rem;margin-top:.3rem}
+.api-dot{width:8px;height:8px;border-radius:50%}
+.api-dot.ok{background:#22c55e}.api-dot.off{background:var(--text2)}.api-dot.err{background:#ef4444}
+
+/* Author Section */
+.author-section{margin-top:3rem;padding-top:2.5rem;border-top:1px solid var(--border)}
+.author-card{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:2.5rem 2rem 2rem;text-align:center;position:relative;overflow:hidden}
+.author-card::before{content:"";position:absolute;top:0;left:0;right:0;height:100px;background:linear-gradient(135deg,rgba(108,99,255,.1),rgba(167,139,250,.06));pointer-events:none}
+.author-avatar{width:72px;height:72px;border-radius:50%;margin:0 auto 1.25rem;position:relative;z-index:1;overflow:hidden;border:2px solid rgba(108,99,255,.4);background:linear-gradient(135deg,#6c63ff,#a78bfa);display:flex;align-items:center;justify-content:center}
+.author-avatar-letter{font-size:2rem;font-weight:700;color:#fff;line-height:1}
+.author-name{font-size:1.25rem;font-weight:700;margin-bottom:.35rem;letter-spacing:-.01em}
+.author-role{font-size:.82rem;color:var(--accent);font-weight:500;margin-bottom:.85rem}
+.author-bio{font-size:.88rem;color:var(--text2);line-height:1.65;margin-bottom:1.25rem;max-width:380px;margin-left:auto;margin-right:auto}
+.author-tags{display:flex;flex-wrap:wrap;gap:.4rem;justify-content:center;margin-bottom:1.5rem}
+.author-tag{padding:.3rem .7rem;border-radius:999px;font-size:.75rem;font-weight:500;border:1px solid var(--border);color:var(--text2);background:var(--surface2);transition:border-color .2s}
+.author-tag:hover{border-color:var(--accent);color:var(--text)}
+.author-divider{width:40px;height:1px;background:var(--border);margin:0 auto 1.25rem}
+.author-links{display:flex;gap:.5rem;justify-content:center;flex-wrap:wrap;margin-bottom:1.25rem}
+.author-link{display:flex;align-items:center;gap:.35rem;padding:.5rem .9rem;border-radius:var(--radius-sm);border:1px solid var(--border);color:var(--text2);text-decoration:none;font-size:.8rem;font-weight:500;transition:all .2s;background:transparent}
+.author-link:hover{border-color:var(--accent);color:var(--accent);transform:translateY(-1px)}
+.author-link svg{flex-shrink:0}
+.author-slogan{font-size:.82rem;color:var(--text2);font-style:italic;opacity:.8}
+</style>
+</head>
+<body>
+<!-- Install Banner -->
+<div class="install-banner" id="installBanner">
+  <div class="install-text">📲 <strong>安装文案生成器</strong>到手机桌面，离线也能用</div>
+  <button class="install-accept" id="installAccept">安装</button>
+  <button class="install-dismiss" id="installDismiss">暂不</button>
+</div>
+<div class="container">
+  <div class="topbar">
+    <button class="settings-trigger" id="openSettings">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      品牌设置
+    </button>
+  </div>
+  <header>
+    <h1>✨ 文案生成器</h1>
+    <p>输入你的文案，一键生成适配多平台的版本</p>
+    <div class="brand-badge" id="brandBadge">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span id="brandBadgeText"></span>
+    </div>
+  </header>
+  <section class="input-section">
+    <textarea id="inputText" placeholder="在这里输入你的原始文案...&#10;&#10;例如：我们公司推出了一款新产品，功能非常强大，可以智能分析数据并生成报告，欢迎大家体验。" maxlength="2000"></textarea>
+    <div class="char-count"><span id="charCount">0</span> / 2000</div>
+  </section>
+  <div class="tone-section">
+    <button class="tone-btn active" data-tone="default">默认风格</button>
+    <button class="tone-btn" data-tone="casual">轻松口语</button>
+    <button class="tone-btn" data-tone="formal">正式专业</button>
+    <button class="tone-btn" data-tone="marketing">营销推广</button>
+  </div>
+
+  <div class="mode-toggle">
+    <span class="mode-label">生成模式：</span>
+    <button class="tone-btn active" id="modeLocal" style="padding:.35rem .8rem;font-size:.8rem">本地生成</button>
+    <button class="tone-btn" id="modeAI" style="padding:.35rem .8rem;font-size:.8rem">AI 生成 \u2728</button>
+  </div>
+  <div id="aiStatusLine" class="api-status hidden" style="margin-bottom:1rem">
+    <span class="api-dot off" id="apiDot"></span>
+    <span id="apiStatusText" style="color:var(--text2)">未配置 API Key</span>
+  </div>
+  <div class="platform-select" id="platformSelect">
+    <div class="platform-select-title">选择要生成的平台 <span style="font-size:.78rem;color:var(--text2);font-weight:400">（按需生成，节省 AI 用量）</span></div>
+    <div class="platform-grid">
+      <label class="platform-check active" data-platform="weibo"><input type="checkbox" value="weibo" checked><span class="p-dot" style="background:var(--weibo)"></span><span class="p-name">微博</span></label>
+      <label class="platform-check active" data-platform="xiaohongshu"><input type="checkbox" value="xiaohongshu" checked><span class="p-dot" style="background:var(--xiaohongshu)"></span><span class="p-name">小红书</span></label>
+      <label class="platform-check active" data-platform="linkedin"><input type="checkbox" value="linkedin" checked><span class="p-dot" style="background:var(--linkedin)"></span><span class="p-name">LinkedIn</span></label>
+      <label class="platform-check active" data-platform="wechat"><input type="checkbox" value="wechat" checked><span class="p-dot" style="background:var(--wechat)"></span><span class="p-name">微信</span></label>
+      <label class="platform-check active" data-platform="douyin"><input type="checkbox" value="douyin" checked><span class="p-dot" style="background:linear-gradient(135deg,#25f4ee,#fe2c55)"></span><span class="p-name">抖音</span></label>
+    </div>
+  </div>
+  <button class="generate-btn" id="generateBtn">
+    <span class="btn-text">🚀 生成多平台文案</span>
+    <span class="spinner"></span>
+  </button>
+  <div class="results hidden" id="results"></div>
+  <section class="history-section hidden" id="historySection">
+    <div class="history-header">
+      <h2>历史记录</h2>
+      <div class="history-actions">
+        <button class="history-toggle" id="historyToggle">全部收起</button>
+        <button class="history-clear" id="historyClear">清空记录</button>
+      </div>
+    </div>
+    <div class="history-list" id="historyList"></div>
+
+  <!-- Author -->
+  <section class="author-section">
+    <div class="author-card">
+      <div class="author-avatar">
+        <span class="author-avatar-letter">J</span>
+      </div>
+      <div class="author-name">吉士嘉</div>
+      <div class="author-role">全栈开发者 · 自媒体创作者</div>
+      <div class="author-bio">用技术让创作更简单</div>
+      <div class="author-tags">
+        <span class="author-tag">🧑‍💻 前端开发</span>
+        <span class="author-tag">📱 PWA</span>
+        <span class="author-tag">✍️ 内容创作</span>
+        <span class="author-tag">🤖 AI 应用</span>
+      </div>
+      <div class="author-divider"></div>
+      <div class="author-links">
+        <a class="author-link" href="https://github.com/JonathanJessica" target="_blank" rel="noopener noreferrer">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22"/></svg>
+          GitHub
+        </a>
+        <a class="author-link" href="mailto:jonathan20@qq.com" rel="noopener">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+          jonathan20@qq.com
+        </a>
+        <a class="author-link" href="javascript:void(0)" onclick="if(navigator.share){navigator.share({title:'文案生成器',url:location.href})}else{navigator.clipboard.writeText(location.href).then(()=>showToast('链接已复制 ✓'))}" rel="noopener">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          分享给朋友
+        </a>
+      </div>
+      <div class="author-slogan">"用技术让创作更简单"</div>
+    </div>
+  </section>
+</div>
+<div class="modal-overlay" id="settingsModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>🎯 品牌调性设置</h2>
+      <button class="modal-close" id="closeSettings">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <label for="brandName">品牌名称</label>
+        <input type="text" id="brandName" placeholder="例如：极客空间、星河科技" maxlength="30">
+      </div>
+      <div class="preset-section">
+        <span class="preset-label">品牌调性预设（可多选）</span>
+        <div class="preset-chips" id="presetChips">
+          <button class="preset-chip" data-preset="专业严谨">🔬 专业严谨</button>
+          <button class="preset-chip" data-preset="年轻活力">⚡ 年轻活力</button>
+          <button class="preset-chip" data-preset="温暖亲切">🌿 温暖亲切</button>
+          <button class="preset-chip" data-preset="高端奢华">👑 高端奢华</button>
+          <button class="preset-chip" data-preset="极简克制">◾ 极简克制</button>
+          <button class="preset-chip" data-preset="幽默风趣">😄 幽默风趣</button>
+          <button class="preset-chip" data-preset="科技未来感">🚀 科技未来感</button>
+          <button class="preset-chip" data-preset="文艺清新">🍃 文艺清新</button>
+        </div>
+      </div>
+      <div class="field">
+        <label for="brandDesc">品牌调性描述</label>
+        <p class="hint">描述你希望文案呈现的整体感觉、用词习惯或表达方式</p>
+        <textarea id="brandDesc" placeholder="例如：我们品牌走年轻潮流路线，喜欢用网络热梗，语气轻松但不失专业感。避免过于正式的表达，喜欢用 emoji 但不过度堆砌。"></textarea>
+      </div>
+      <div class="field">
+        <label for="brandKeywords">品牌关键词</label>
+        <p class="hint">用于在生成文案时融入品牌关联词，用逗号分隔</p>
+        <input type="text" id="brandKeywords" placeholder="例如：创新、效率、智能、极致体验">
+      </div>
+      <div class="field">
+        <label for="brandAvoid">避免使用的表达</label>
+        <p class="hint">列出你不想在文案中出现的词语或表达方式</p>
+        <input type="text" id="brandAvoid" placeholder="例如：全网最低、震惊、不转不是中国人">
+      </div>
+
+      <div style="margin-top:.5rem;padding-top:1.25rem;border-top:1px solid var(--border)">
+        <div class="field">
+          <label for="apiKey">小米 MiMo API Key <span class="ai-badge">AI 增强</span></label>
+          <p class="hint">填入 API Key 后可使用 AI 模型生成更有深度的文案</p>
+          <input type="password" id="apiKey" placeholder="sk-xxxxxxxxxxxxxxxxxxxxxxxx" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="apiModel">模型选择</label>
+          <select id="apiModel" style="padding:.7rem 1rem;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:inherit;font-size:.9rem;outline:none;width:100%">
+            
+            
+            <option value="mimo-v2.5-pro">MiMo-V2.5-Pro（最强，高质量）</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" id="resetSettings">重置</button>
+      <button class="btn-primary" id="saveSettings">保存设置</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+let currentTone = 'default';
+const HISTORY_KEY = 'copywriter_history';
+const BRAND_KEY = 'copywriter_brand';
+const MAX_HISTORY = 20;
+
+/* ── Brand Profile ── */
+function loadBrand(){ try{ return JSON.parse(localStorage.getItem(BRAND_KEY)) || null; } catch{ return null; } }
+function saveBrand(profile){ localStorage.setItem(BRAND_KEY, JSON.stringify(profile)); }
+function clearBrand(){ localStorage.removeItem(BRAND_KEY); }
+function applyBrandBadge(){
+  const brand = loadBrand();
+  const badge = $('#brandBadge');
+  const badgeText = $('#brandBadgeText');
+  if(brand && (brand.name || brand.presets.length || brand.desc)){
+    const parts = [];
+    if(brand.name) parts.push(brand.name);
+    if(brand.presets.length) parts.push(brand.presets.join(' · '));
+    badgeText.textContent = '品牌：' + parts.join(' · ');
+    badge.classList.add('visible');
+  } else { badge.classList.remove('visible'); }
+}
+
+/* ── Settings Modal ── */
+function openModal(){
+  const brand = loadBrand();
+  if(brand){
+    $('#brandName').value = brand.name || '';
+    $('#brandDesc').value = brand.desc || '';
+    $('#brandKeywords').value = (brand.keywords || []).join('\u3001');
+    $('#brandAvoid').value = (brand.avoid || []).join('\u3001');
+    $$('.preset-chip').forEach(c => c.classList.toggle('active', (brand.presets || []).includes(c.dataset.preset)));
+    if($('#apiKey')) $('#apiKey').value = brand.apiKey || '';
+    if($('#apiModel')) $('#apiModel').value = brand.apiModel || 'mimo-v2.5-pro';
+  }
+  $('#settingsModal').classList.add('open');
+}
+function closeModal(){ $('#settingsModal').classList.remove('open'); }
+$('#openSettings').addEventListener('click', openModal);
+$('#closeSettings').addEventListener('click', closeModal);
+$('#settingsModal').addEventListener('click', e => { if(e.target === $('#settingsModal')) closeModal(); });
+document.addEventListener('keydown', e => { if(e.key === 'Escape') closeModal(); });
+$$('.preset-chip').forEach(chip => { chip.addEventListener('click', () => chip.classList.toggle('active')); });
+
+$('#saveSettings').addEventListener('click', () => {
+  const profile = {
+    name: $('#brandName').value.trim(),
+    presets: [...$$('.preset-chip.active')].map(c => c.dataset.preset),
+    desc: $('#brandDesc').value.trim(),
+    keywords: $('#brandKeywords').value.split(/[,，\u3001]/).map(s=>s.trim()).filter(Boolean),
+    avoid: $('#brandAvoid').value.split(/[,，\u3001]/).map(s=>s.trim()).filter(Boolean),
+    apiKey: $('#apiKey').value.trim(),
+    apiModel: $('#apiModel').value,
+  };
+  saveBrand(profile); applyBrandBadge(); closeModal(); showToast('品牌设置已保存 \u2713');
+});
+$('#resetSettings').addEventListener('click', () => {
+  if(!confirm('\u786e\u5b9a\u8981\u91cd\u7f6e\u6240\u6709\u54c1\u724c\u8bbe\u7f6e\u5417\uff1f')) return;
+  clearBrand();
+  $('#brandName').value=''; $('#brandDesc').value=''; $('#brandKeywords').value=''; $('#brandAvoid').value=''; if($('#apiKey'))$('#apiKey').value=''; if($('#apiModel'))$('#apiModel').value='mimo-7b-rl';
+  $$('.preset-chip').forEach(c => c.classList.remove('active'));
+  applyBrandBadge(); showToast('品牌设置已重置');
+});
+
+/* ── Brand helpers ── */
+function escapeRegex(s){ return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+function brandFlavor(text){
+  const brand = loadBrand();
+  if(!brand) return text;
+  let result = text;
+  if(brand.avoid && brand.avoid.length){
+    brand.avoid.forEach(word => { if(word) result = result.replace(new RegExp(escapeRegex(word), 'g'), ''); });
+  }
+  return result;
+}
+function brandPrefix(){
+  const brand = loadBrand();
+  if(!brand) return '';
+  const p = brand.presets || [];
+  if(p.includes('\u5e74\u8f7b\u6d3b\u529b')) return '\U0001f525 ';
+  if(p.includes('\u6e29\u6696\u4eb2\u5207')) return '\U0001f33f ';
+  if(p.includes('\u9ad8\u7aef\u5962\u534e')) return '\u2728 ';
+  if(p.includes('\u79d1\u6280\u672a\u6765\u611f')) return '\U0001f680 ';
+  if(p.includes('\u5e7d\u9ed8\u98ce\u8da3')) return '\U0001f606 ';
+  if(p.includes('\u6587\u827a\u6e05\u65b0')) return '\U0001f343 ';
+  if(p.includes('\u4e13\u4e1a\u4e25\u8c28')) return '\U0001f4cb ';
+  if(p.includes('\u6781\u7b80\u514b\u5236')) return '\u00b7 ';
+  return '';
+}
+function brandSuffix(){ const b=loadBrand(); return (b&&b.name) ? ' \u2014 '+b.name : ''; }
+function brandHashtags(){
+  const b=loadBrand(); if(!b) return '';
+  let tags=[]; if(b.name) tags.push('#'+b.name);
+  if(b.keywords) tags.push(...b.keywords.slice(0,2).map(k=>'#'+k));
+  return tags.length ? ' '+tags.join(' ') : '';
+}
+
+/* ── Input ── */
+$('#inputText').addEventListener('input', e => { $('#charCount').textContent = e.target.value.length; });
+$$('.tone-btn').forEach(btn => {
+  btn.addEventListener('click', () => { $$('.tone-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); currentTone=btn.dataset.tone; });
+});
+$('#generateBtn').addEventListener('click', () => {
+  const text = $('#inputText').value.trim();
+  if(!text){ showToast('\u8bf7\u5148\u8f93\u5165\u6587\u6848\u5185\u5bb9'); $('#inputText').focus(); return; }
+  generate(text);
+});
+
+/* ── History ── */
+function loadHistory(){ try{ return JSON.parse(localStorage.getItem(HISTORY_KEY))||[]; } catch{ return []; } }
+function saveHistory(list){ localStorage.setItem(HISTORY_KEY, JSON.stringify(list)); }
+function addToHistory(entry){ const l=loadHistory(); l.unshift(entry); if(l.length>MAX_HISTORY)l.pop(); saveHistory(l); renderHistory(); }
+function clearHistory(){ localStorage.removeItem(HISTORY_KEY); renderHistory(); showToast('\u5386\u53f2\u8bb0\u5f55\u5df2\u6e05\u7a7a'); }
+function renderHistory(){
+  const list=loadHistory(), section=$('#historySection'), container=$('#historyList');
+  if(!list.length){ section.classList.add('hidden'); return; }
+  section.classList.remove('hidden'); container.innerHTML='';
+  list.forEach((entry, idx) => {
+    const item=document.createElement('div'); item.className='history-item';
+    const toneLabel={default:'\u9ed8\u8ba4',casual:'\u8f7b\u677e\u53e3\u8bed',formal:'\u6b63\u5f0f\u4e13\u4e1a',marketing:'\u8425\u9500\u63a8\u5e7f'}[entry.tone]||'\u9ed8\u8ba4';
+    const bName=entry.brandName?' \u00b7 '+entry.brandName:''; const modeTag=entry.genMode==='ai'?' <span class="ai-badge">AI</span>':'';
+    item.innerHTML=`<div class="history-item-header"><div class="history-item-meta"><span class="history-item-time">${formatTime(entry.time)}</span><span class="history-item-preview">${escapeHtml(entry.original)}</span></div><span class="history-item-tone">${toneLabel}${bName}${modeTag}</span><button class="history-restored" data-idx="${idx}" title="\u6062\u590d\u5230\u7f16\u8f91\u533a">\u6062\u590d</button><svg class="history-item-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></div><div class="history-item-body"><div class="history-item-results">${entry.results.map(r=>`<div class="history-mini-card"><div class="history-mini-header"><span class="history-mini-name"><span class="platform-dot ${r.platform}"></span>${r.name}</span><button class="copy-btn" data-text="${escapeAttr(r.content)}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg><span>\u590d\u5236</span></button></div><div class="history-mini-body">${highlightContent(r.content)}</div></div>`).join('')}</div></div>`;
+    item.querySelector('.history-item-header').addEventListener('click', e=>{ if(e.target.closest('.history-restored')||e.target.closest('.copy-btn')) return; item.classList.toggle('open'); });
+    item.querySelector('.history-restored').addEventListener('click',()=>{ $('#inputText').value=entry.original; $('#charCount').textContent=entry.original.length; setTone(entry.tone); showToast('\u5df2\u6062\u590d\u5230\u7f16\u8f91\u533a'); window.scrollTo({top:0,behavior:'smooth'}); });
+    item.querySelectorAll('.copy-btn').forEach(btn=>{ btn.addEventListener('click',()=>copyText(btn)); });
+    container.appendChild(item);
+  });
+}
+function formatTime(ts){ const d=new Date(ts);const pad=n=>String(n).padStart(2,'0');return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`; }
+function setTone(tone){ currentTone=tone; $$('.tone-btn').forEach(b=>b.classList.toggle('active',b.dataset.tone===tone)); }
+$('#historyToggle').addEventListener('click',()=>{ const items=document.querySelectorAll('.history-item'); const allOpen=[...items].every(i=>i.classList.contains('open')); items.forEach(i=>{if(allOpen)i.classList.remove('open');else i.classList.add('open');}); $('#historyToggle').textContent=allOpen?'\u5168\u90e8\u5c55\u5f00':'\u5168\u90e8\u6536\u8d77'; });
+$('#historyClear').addEventListener('click',()=>{ if(confirm('\u786e\u5b9a\u8981\u6e05\u7a7a\u6240\u6709\u5386\u53f2\u8bb0\u5f55\u5417\uff1f')) clearHistory(); });
+
+
+/* ── Generation Mode & Platform Selection ── */
+let genMode = 'local';
+const toneLabels = {default:'默认、自然',casual:'轻松口语、亲切随意',formal:'正式专业、严谨',marketing:'营销推广、引人注意'};
+const toneLabelsEn = {default:'natural and engaging',casual:'casual and friendly',formal:'formal and professional',marketing:'persuasive and compelling'};
+
+$('#modeLocal').addEventListener('click', () => { genMode='local'; $('#modeLocal').classList.add('active'); $('#modeAI').classList.remove('active'); $('#aiStatusLine').classList.add('hidden'); });
+$('#modeAI').addEventListener('click', () => {
+  genMode='ai'; $('#modeAI').classList.add('active'); $('#modeLocal').classList.remove('active'); $('#aiStatusLine').classList.remove('hidden');
+  const b=loadBrand(); updateApiStatus(b?.apiKey);
+});
+function updateApiStatus(key){
+  const dot=$('#apiDot'), txt=$('#apiStatusText');
+  if(key && key.length>5){ dot.className='api-dot ok'; txt.textContent='API Key 已配置'; txt.style.color='#22c55e'; }
+  else{ dot.className='api-dot off'; txt.textContent='未配置 API Key（请在品牌设置中填写）'; txt.style.color='var(--text2)'; }
+}
+
+// Platform checkbox toggles
+document.querySelectorAll('.platform-check').forEach(label => {
+  label.addEventListener('click', e => { const cb=label.querySelector('input'); cb.checked=!cb.checked; label.classList.toggle('active',cb.checked); e.preventDefault(); });
+});
+function getSelectedPlatforms(){ return [...document.querySelectorAll('.platform-check input:checked')].map(cb=>cb.value); }
+
+const PLAT_META = {
+  weibo:{name:'微博',meta:'140 字内 · 简洁有力'},xiaohongshu:{name:'小红书',meta:'带 emoji · 话题标签'},
+  linkedin:{name:'LinkedIn',meta:'专业商务风格'},wechat:{name:'微信',meta:'朋友圈 / 公众号风格'},douyin:{name:'抖音',meta:'短视频文案 · 引爆流量'},
+};
+
+/* ── Generator ── */
+async function generate(text){
+  const selected = getSelectedPlatforms();
+  if(!selected.length){ showToast('请至少选择一个平台'); return; }
+  const btn=$('#generateBtn'); btn.classList.add('loading'); btn.disabled=true;
+  const cleanText = brandFlavor(text);
+  let results = [];
+
+  if(genMode === 'ai'){
+    const brand = loadBrand();
+    if(!brand?.apiKey){ showToast('请先在品牌设置中配置 API Key'); btn.classList.remove('loading'); btn.disabled=false; return; }
+    try { results = await generateWithAI(cleanText, selected, brand); }
+    catch(err) { showToast('AI 生成失败：' + (err.message||'请检查网络和 Key')); btn.classList.remove('loading'); btn.disabled=false; return; }
+  } else {
+    await new Promise(r=>setTimeout(r,400));
+    const gens = {weibo:generateWeibo,xiaohongshu:generateXiaohongshu,linkedin:generateLinkedIn,wechat:generateWechat,douyin:generateDouyin};
+    selected.forEach(p => { results.push({platform:p,...PLAT_META[p],content:gens[p](cleanText)}); });
+  }
+
+  renderResults(results);
+  const brand=loadBrand();
+  addToHistory({time:Date.now(),original:text,tone:currentTone,brandName:brand?.name||'',genMode,results});
+  btn.classList.remove('loading'); btn.disabled=false;
+  $('#results').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+/* ── Xiaomi MiMo AI ── */
+function brandReq(brand){
+  if(!brand) return '';
+  const p = [];
+  if(brand.name) p.push('- 品牌：'+brand.name);
+  if(brand.presets?.length) p.push('- 调性：'+brand.presets.join('、'));
+  if(brand.desc) p.push('- 要求：'+brand.desc);
+  if(brand.keywords?.length) p.push('- 关键词：'+brand.keywords.join('、'));
+  if(brand.avoid?.length) p.push('- 避免：'+brand.avoid.join('、'));
+  return p.length ? '\n品牌要求：\n'+p.join('\n') : '';
+}
+
+function buildPrompt(platforms, text, brand){
+  const platNames = {weibo:'微博(140字内)',xiaohongshu:'小红书(带emoji和话题标签)',linkedin:'LinkedIn(英文专业风格)',wechat:'微信(温暖自然)',douyin:'抖音(短视频文案)'};
+  const list = platforms.map(p=>platNames[p]).join('、');
+  const tone = toneLabels[currentTone] || '自然';
+
+  if(platforms.length === 1){
+    const p = platforms[0];
+    const specific = {
+      weibo: '140字以内，简洁有力，可加1-2个话题标签',
+      xiaohongshu: '带自然emoji点缀，结尾3-5个话题标签，分段易读',
+      linkedin: '英文专业商务风格，结构化bullet points，结尾附思考性问题和3-5个英文hashtag',
+      wechat: '温暖自然真诚，适当分段，节奏感好',
+      douyin: '开头设悬念，精简2-4个要点，带emoji，结尾3-5个话题标签',
+    };
+    return [
+      {role:'system',content:'你是专业的多平台文案创作专家。'},
+      {role:'user',content:'请将以下文案改写为适合'+platNames[p]+'发布的版本。\n\n要求：\n- '+specific[p]+'\n- 语气：'+tone+'\n- 所有平台都不要引导点赞、收藏、关注、转发\n'+brandReq(brand)+'\n\n原始文案：\n'+text+'\n\n直接输出改写后的文案，不要解释。'}
+    ];
+  }
+
+  return [
+    {role:'system',content:'你是专业的多平台文案创作专家。'},
+    {role:'user',content:'请将以下文案分别改写为适合这些平台的版本：'+list+'\n\n要求：\n- 每个平台用 ===平台名=== 作为分隔标记（如 ===微博===、===小红书===）\n- 微博：140字内，简洁有力\n- 小红书：带emoji和话题标签\n- LinkedIn：英文专业商务风格，带hashtag\n- 微信：温暖自然，适当分段\n- 抖音：开头设悬念，精简要点，带话题标签\n- 所有平台都不要引导点赞、收藏、关注、转发\n- 语气：'+tone+brandReq(brand)+'\n\n原始文案：\n'+text+'\n\n严格按格式输出，不要解释。'}
+  ];
+}
+
+async function generateWithAI(text, platforms, brand){
+  const model = brand.apiModel || 'mimo-v2.5-pro';
+  const messages = buildPrompt(platforms, text, brand);
+  const body = JSON.stringify({model,messages,temperature:0.7,max_tokens:2000});
+
+  const resp = await fetch('https://api.xiaomimimo.com/v1/chat/completions',{
+    method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+brand.apiKey},body
+  });
+  if(!resp.ok) throw new Error('API 请求失败 ('+resp.status+')');
+  const data = await resp.json();
+  const aiText = data.choices?.[0]?.message?.content || '';
+
+  if(platforms.length === 1){
+    return [{platform:platforms[0],...PLAT_META[platforms[0]],content:aiText.trim()}];
+  }
+
+  // Parse ===Platform=== sections
+  const results = [];
+  const sections = aiText.split(/===([^=]+)===/);
+  const platMap = {'微博':'weibo','小红书':'xiaohongshu','LinkedIn':'linkedin','微信':'wechat','抖音':'douyin'};
+  for(let i=1;i<sections.length;i+=2){
+    const name=sections[i].trim();
+    const content=(sections[i+1]||'').trim();
+    const pk=Object.keys(platMap).find(k=>name.includes(k));
+    if(pk && content && platforms.includes(pk)){
+      results.push({platform:pk,...PLAT_META[pk],content});
+    }
+  }
+  if(!results.length && aiText.trim()){
+    return [{platform:platforms[0],...PLAT_META[platforms[0]],content:aiText.trim()}];
+  }
+  return results;
+}
+/* ── Utilities ── */
+function pick(a){return a[Math.floor(Math.random()*a.length)]}
+function extractMainTopic(text){ const c=text.replace(/[，。！？、；：\u201c\u201d\u2018\u2019（）【】《》\s]+/g,' ').trim(); const w=c.split(/\s+/).filter(v=>v.length>=2&&v.length<=6); return w.length?w[0].substring(0,8):c.substring(0,4); }
+function extractKeyPhrases(text){ return[...new Set(text.replace(/[，。！？、；：\u201c\u201d\u2018\u2019（）【】《》\n]+/g,' ').split(/\s+/).filter(w=>w.length>=2&&w.length<=10))].slice(0,5); }
+function escapeHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function escapeAttr(s){return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function highlightContent(text){let h=escapeHtml(text);return h.replace(/(#[^\s#][^#]*#?)/g,'<span class="hashtag">$1</span>')}
+
+/* ── Weibo ── */
+function generateWeibo(text){
+  const openers={default:['','📢 ','💡 '],casual:['哈哈，','不得不说，','天哪，'],formal:['【重要】','【发布】','【公告】'],marketing:['🔥','⭐','💥']};
+  const opener=pick(openers[currentTone]);
+  let result=opener+condense(text,opener.length);
+  const tag=extractMainTopic(text);
+  if(tag&&(result.length+tag.length+2)<=138) result+=' #'+tag+'#';
+  const btags=brandHashtags();
+  if(btags&&(result.length+btags.length)<=138) result+=btags;
+  if(result.length>140) result=result.substring(0,137)+'...';
+  return result;
+}
+function condense(text,offset){
+  const budget=135-offset; if(text.length<=budget) return text;
+  const sentences=text.split(/[。！？.!?\n]/).filter(Boolean); let r='';
+  for(const s of sentences){const c=r+s+'。';if(c.length>budget){if(!r) return s.substring(0,budget-3)+'...';return r.replace(/[。]$/,'')+'...';}r=c;} return r;
+}
+
+/* ── Xiaohongshu ── */
+function generateXiaohongshu(text){
+  const emojis={default:['✨','💡','📌','🎯','💪','🌟'],casual:['😆','🤣','💕','🎉','🥳','🙌'],formal:['📋','📊','✅','💼','🔍','📈'],marketing:['🔥','🚀','💰','🎯','⭐','👑']};
+  const pe={default:'✨',casual:'😆',formal:'📋',marketing:'🔥'};
+  const closers={default:['冲冲冲💪','快去试试吧💡','太香了✨'],casual:['姐妹们冲！','不允许你不知道！','真的绝绝子🥺'],formal:['值得一试','深入了解','不妨体验一下'],marketing:['赶紧试试🔥','别错过！','心动就行动💥']};
+  const bp=brandPrefix(); const pool=emojis[currentTone];
+  const sentences=text.split(/[。！？.!?\n]/).filter(Boolean); let body='';
+  sentences.forEach((s,i)=>{ body+=(i===0?(bp||pe[currentTone]):pick(pool))+' '+s.trim()+'\n\n'; });
+  const tags=genTags(text,currentTone,['分享','日常'],['生活记录','日常分享'],['行业观察','干货分享'],['好物推荐','必入好物']);
+  return body.trim()+'\n\n'+pick(closers[currentTone])+brandSuffix()+'\n\n'+tags+brandHashtags();
+}
+function genTags(text,tone,...sets){
+  const main=extractMainTopic(text); let tags=main?['#'+main+'#']:[];
+  const idx={default:0,casual:1,formal:2,marketing:3}[tone]||0;
+  tags.push(...(sets[idx]||[]).map(t=>'#'+t));
+  extractKeyPhrases(text).slice(0,3).forEach(p=>{const t='#'+p.substring(0,6);if(!tags.includes(t))tags.push(t);});
+  return tags.join(' ');
+}
+
+/* ── LinkedIn ── */
+function generateLinkedIn(text){
+  const openers={default:"I'd like to share some thoughts:\n\n",casual:'Great news to share with my network:\n\n',formal:'I am pleased to announce the following update:\n\n',marketing:"Exciting developments worth your attention:\n\n"};
+  const closers={default:"\n\nWhat are your thoughts? I'd love to hear your perspective in the comments.",casual:"\n\nWould love to hear what you think! Share your thoughts below 👇",formal:"\n\nI welcome your professional insights and look forward to engaging with your perspectives on this matter.",marketing:"\n\nFeel free to reach out if you'd like to learn more. Let's connect and explore the possibilities together."};
+  let result=openers[currentTone];
+  const sentences=text.split(/[。！？.!?\n]/).filter(Boolean);
+  if(sentences.length>=3){sentences.forEach(s=>{result+='→ '+s.trim()+'\n';});}else{result+=text.trim()+'\n';}
+  result+=closers[currentTone];
+  const main=extractMainTopic(text); let tags=main?['#'+main]:[]; tags.push('#Innovation','#Growth','#Professional');
+  const brand=loadBrand(); if(brand?.name)tags.push('#'+brand.name); if(brand?.keywords)tags.push(...brand.keywords.slice(0,2).map(k=>'#'+k));
+  extractKeyPhrases(text).slice(0,2).forEach(p=>{const t='#'+p.substring(0,8);if(!tags.includes(t))tags.push(t);});
+  return result+'\n\n'+tags.join(' ');
+}
+
+/* ── WeChat ── */
+function generateWechat(text){
+  const openers={default:['','[思考] ','[太阳] '],casual:['分享一个小事~ ','今天想和大家聊聊 ','记录一下：'],formal:['【重要通知】','【分享】',''],marketing:['✨种草✨','📢 好消息来了！','【重磅推荐】']};
+  const closers={default:['','—— 与朋友们共勉','分享给大家~'],casual:['有同感的举个手🙋','你们觉得呢？','一起聊聊呗~'],formal:['如需了解更多请私信联系','期待您的反馈','欢迎交流'],marketing:['心动不如行动，私我了解详情❤️','数量有限，先到先得！','想要的宝子私信我吧']};
+  const bp=brandPrefix(); const opener=(bp||pick(openers[currentTone]));
+  const sentences=text.split(/[。！？.!?\n]/).filter(Boolean); let body=opener;
+  const mEmoji=['','💭','📖','✨','🌿'];
+  if(sentences.length<=2){body+=text.trim()+'\n\n';}
+  else{sentences.forEach((s,i)=>{if(i>0&&i%2===0)body+='\n';body+=s.trim()+'。';if(i<sentences.length-1&&i%2===1)body+=pick(mEmoji)+'\n';});body+='\n\n';}
+  body+=pick(closers[currentTone])+brandSuffix();
+  if(currentTone==='marketing'||currentTone==='formal'){const main=extractMainTopic(text);if(main)body+='\n\n#'+main+'#';}
+  const bhtags=brandHashtags(); if(bhtags)body+=bhtags;
+  return body.trim();
+}
+
+/* ── Douyin ── */
+function generateDouyin(text){
+  const openers={default:['你知道吗？','今天发现一个事','给大家分享一个⬇️'],casual:['绝了绝了！','救命这也太离谱了','姐妹们听我说！'],formal:['【干货分享】','【行业洞察】','知识分享：'],marketing:['🔥这条一定要看完！','别划走！有惊喜⬇️','这个真的绝了🔥🔥']};
+  const hooks={default:['看完你会有收获','一起看看','一定要看到最后⬇️'],casual:['谁懂啊家人们','我真的会谢','破防了😭'],formal:['深度解析，值得反复观看','建议保存备用','分享给需要的人'],marketing:['别等了冲！','赶紧看看⚠️','错过等一年！']};
+  const bp=brandPrefix(); const sentences=text.split(/[。！？.!?\n]/).filter(Boolean);
+  let body=(bp||pick(openers[currentTone]))+'\n\n';
+  const de=['🔥','💥','✨','🎯','⚡','💡','👀','🔊','📢','❗'];
+  const maxP=Math.min(sentences.length,4);
+  for(let i=0;i<maxP;i++){let s=sentences[i].trim();if(s.length>40)s=s.substring(0,38)+'...';body+=pick(de)+' '+s+'\n';}
+  body+='\n'+pick(hooks[currentTone]);
+  const main=extractMainTopic(text); let tags=main?['#'+main]:[];
+  const dc={default:['#知识分享','#涨知识'],casual:['#日常','#生活'],formal:['#干货','#行业知识'],marketing:['#好物推荐','#必入']};
+  tags.push(...(dc[currentTone]||[]));
+  const brand=loadBrand(); if(brand?.name)tags.push('#'+brand.name);
+  extractKeyPhrases(text).slice(0,2).forEach(p=>{const t='#'+p.substring(0,6);if(!tags.includes(t))tags.push(t);});
+  return body+'\n\n'+tags.join(' ');
+}
+
+/* ── Rendering ── */
+function renderResults(results){
+  const container=$('#results');container.innerHTML='';container.classList.remove('hidden');
+  results.forEach(r=>{
+    const wordLen=r.content.length;const overLimit=r.platform==='weibo'&&wordLen>140;
+    const card=document.createElement('div');card.className='result-card';
+    card.innerHTML=`<div class="result-header"><div class="platform-info"><span class="platform-dot ${r.platform}"></span><div><div class="platform-name">${r.name}</div><div class="platform-meta">${r.meta}</div></div></div><button class="copy-btn" data-text="${escapeAttr(r.content)}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg><span>\u590d\u5236</span></button></div><div class="result-body">${highlightContent(r.content)}</div><div class="result-footer"><span class="word-count ${overLimit?'over':''}">${wordLen} \u5b57${r.platform==='weibo'?' / 140':''}</span></div>`;
+    container.appendChild(card);
+  });
+  container.querySelectorAll('.copy-btn').forEach(btn=>{btn.addEventListener('click',()=>copyText(btn));});
+}
+async function copyText(btn){
+  const text=btn.dataset.text;
+  try{await navigator.clipboard.writeText(text);btn.classList.add('copied');btn.querySelector('span').textContent='\u5df2\u590d\u5236';showToast('\u5df2\u590d\u5236\u5230\u526a\u8d34\u677f \u2713');setTimeout(()=>{btn.classList.remove('copied');btn.querySelector('span').textContent='\u590d\u5236';},2000);}
+  catch{const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);showToast('\u5df2\u590d\u5236\u5230\u526a\u8d34\u677f \u2713');}
+}
+function showToast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._timer);t._timer=setTimeout(()=>t.classList.remove('show'),2200);}
+$('#inputText').addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='Enter')$('#generateBtn').click();});
+
+
+/* ── Service Worker Registration ── */
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./service-worker.js')
+      .then(reg => { console.log('SW registered:', reg.scope); })
+      .catch(err => { console.log('SW registration failed:', err); });
+  });
+}
+
+/* ── Install Prompt ── */
+let deferredPrompt = null;
+const installBanner = document.getElementById('installBanner');
+const installAccept = document.getElementById('installAccept');
+const installDismiss = document.getElementById('installDismiss');
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  // Check if user previously dismissed
+  if(!localStorage.getItem('install_dismissed')){
+    installBanner.classList.add('show');
+  }
+});
+
+installAccept.addEventListener('click', async () => {
+  if(!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  console.log('Install outcome:', outcome);
+  deferredPrompt = null;
+  installBanner.classList.remove('show');
+  if(outcome === 'accepted'){
+    showToast('应用安装成功！');
+  }
+});
+
+installDismiss.addEventListener('click', () => {
+  installBanner.classList.remove('show');
+  deferredPrompt = null;
+  localStorage.setItem('install_dismissed', '1');
+});
+
+window.addEventListener('appinstalled', () => {
+  installBanner.classList.remove('show');
+  deferredPrompt = null;
+  showToast('已安装到桌面 ✓');
+});
+
+// If already running as installed PWA, hide banner permanently
+if(window.matchMedia('(display-mode: standalone)').matches){
+  installBanner.classList.remove('show');
+}
+
+// Init
+applyBrandBadge();
+renderHistory();
+const _b=loadBrand(); if(_b?.apiKey) updateApiStatus(_b.apiKey);
+</script>
+</body>
+</html>
