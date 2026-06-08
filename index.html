@@ -730,7 +730,7 @@ $('#inputText').addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key=
 /* ── Service Worker Registration ── */
 if('serviceWorker' in navigator){
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./service-worker.js')
+    navigator.serviceWorker.register('./service-worker.js', {scope: './'})
       .then(reg => { console.log('SW registered:', reg.scope); })
       .catch(err => { console.log('SW registration failed:', err); });
   });
