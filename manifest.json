@@ -1,47 +1,40 @@
 ﻿{
-    "description":  "一键生成微博、小红书、LinkedIn、微信、抖音多平台文案",
-    "short_name":  "文案生成",
-    "shortcuts":  [
-                      {
-                          "url":  "./index.html#settings",
-                          "name":  "品牌设置",
-                          "description":  "管理品牌调性设置",
-                          "short_name":  "设置"
-                      }
-                  ],
-    "icons":  [
-                  {
-                      "purpose":  "any maskable",
-                      "type":  "image/svg+xml",
-                      "sizes":  "512x512",
-                      "src":  "icon.svg"
-                  },
-                  {
-                      "purpose":  "any maskable",
-                      "type":  "image/svg+xml",
-                      "sizes":  "192x192",
-                      "src":  "icon.svg"
-                  },
-                  {
-                      "type":  "image/svg+xml",
-                      "sizes":  "32x32",
-                      "src":  "favicon.svg"
-                  },
-                  {
-                      "type":  "image/svg+xml",
-                      "sizes":  "16x16",
-                      "src":  "favicon.svg"
-                  }
-              ],
-    "lang":  "zh-CN",
-    "orientation":  "portrait",
-    "theme_color":  "#6c63ff",
-    "display":  "standalone",
-    "name":  "文案生成器",
-    "categories":  [
-                       "productivity",
-                       "utilities"
-                   ],
-    "background_color":  "#0a0a0b",
-    "start_url":  "./index.html"
+  "name": "文案生成器",
+  "short_name": "文案生成",
+  "description": "一键生成微博、小红书、LinkedIn、微信、抖音多平台文案",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0a0a0b",
+  "theme_color": "#6c63ff",
+  "lang": "zh-CN",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ],
+  "categories": ["productivity", "utilities"],
+  "shortcuts": [
+    {
+      "name": "品牌设置",
+      "short_name": "设置",
+      "url": ".#settings",
+      "description": "管理品牌调性设置"
+    }
+  ]
 }
